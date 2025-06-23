@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>見逃しOKシューティングゲーム</title>
+  <title>シューティングゲーム（スコア400クリア）</title>
   <style>
     body {
       margin: 0;
@@ -15,7 +15,7 @@
       display: block;
       background-color: #111;
     }
-    #backButton, #scoreDisplay, #timerDisplay, #lifeDisplay {
+    #backButton, #scoreDisplay, #timerDisplay {
       position: absolute;
       padding: 10px 20px;
       background-color: #fff;
@@ -32,10 +32,6 @@
       cursor: pointer;
     }
     #scoreDisplay {
-      top: 20px;
-      right: 220px;
-    }
-    #lifeDisplay {
       top: 20px;
       right: 120px;
     }
@@ -63,15 +59,14 @@
 
 <button id="backButton" onclick="location.href='index.html'">戻る</button>
 <div id="scoreDisplay">スコア: 0</div>
-<div id="lifeDisplay" style="display:none;">ライフ: ∞</div> <!-- ライフ非表示 -->
-<div id="timerDisplay">時間: 60</div>
+<div id="timerDisplay">時間: 30</div>
 <div id="gameMessage"></div>
 <canvas id="gameCanvas"></canvas>
 
-<!-- BGM & 効果音 -->
 <audio id="bgm" src="https://cdn.pixabay.com/download/audio/2021/11/09/audio_f257713204.mp3?filename=8-bit-loop-13742.mp3" loop></audio>
 <audio id="shotSound" src="https://cdn.pixabay.com/download/audio/2022/03/23/audio_0317a08470.mp3?filename=laser-gun-6299.mp3"></audio>
 <audio id="hitSound" src="https://cdn.pixabay.com/download/audio/2022/03/20/audio_dbc0f39bda.mp3?filename=pop-6264.mp3"></audio>
+<audio id="gameOverSound" src="https://cdn.pixabay.com/download/audio/2022/03/27/audio_f497fb186f.mp3?filename=game-over-arcade-6435.mp3"></audio>
 
 <script>
   const canvas = document.getElementById("gameCanvas");
@@ -82,6 +77,7 @@
   const bgm = document.getElementById("bgm");
   const shotSound = document.getElementById("shotSound");
   const hitSound = document.getElementById("hitSound");
+  const gameOverSound = document.getElementById("gameOverSound");
 
   const player = {
     x: canvas.width / 2,
@@ -95,11 +91,10 @@
   const bullets = [];
   const enemies = [];
   let score = 0;
-  let timeLeft = 60;
+  let timeLeft = 30; // 制限時間30秒
   let gameOver = false;
-  let scoreGoal = 300; // 目標スコア
+  let scoreGoal = 400;  // クリアに必要なスコアを400に変更
 
-  // 敵種類 赤(HP1) 青(HP3)
   function createEnemy() {
     const type = Math.random() < 0.7 ? "red" : "blue";
     const enemy = {
@@ -136,7 +131,6 @@
       ctx.fillStyle = e.color;
       ctx.fillRect(e.x, e.y, e.width, e.height);
 
-      // 敵が画面下に達したら消すだけ（ライフ減らさない）
       if (e.y > canvas.height) {
         enemies.splice(i, 1);
       }
@@ -144,6 +138,7 @@
   }
 
   function checkCollision() {
+    // 弾と敵の当たり判定
     for (let ei = enemies.length -1; ei >= 0; ei--) {
       const e = enemies[ei];
       for (let bi = bullets.length -1; bi >= 0; bi--) {
@@ -167,6 +162,18 @@
         }
       }
     }
+
+    // プレイヤーと敵の当たり判定（即ゲームオーバー）
+    for (let e of enemies) {
+      if (
+        player.x < e.x + e.width &&
+        player.x + player.width > e.x &&
+        player.y < e.y + e.height &&
+        player.y + player.height > e.y
+      ) {
+        endGame(false);
+      }
+    }
   }
 
   function updateScore() {
@@ -177,12 +184,18 @@
   }
 
   function endGame(won) {
+    if (gameOver) return;
     gameOver = true;
+    bgm.pause();
+    if (!won) {
+      gameOverSound.currentTime = 0;
+      gameOverSound.play();
+    }
     const msg = document.getElementById("gameMessage");
     msg.style.display = "block";
     msg.textContent = won 
       ? `ゲームクリア！\nスコア: ${score}`
-      : `ゲームオーバー！\nスコア: ${score}\n目標スコアは${scoreGoal}でした`;
+      : `ゲームオーバー！\nスコア: ${score}`;
   }
 
   function gameLoop() {
@@ -193,7 +206,6 @@
     drawEnemies();
     checkCollision();
 
-    // ゲームクリア判定：時間切れ＆スコア判定
     if (timeLeft <= 0) {
       if (score >= scoreGoal) {
         endGame(true);
