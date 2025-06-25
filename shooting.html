@@ -2,312 +2,328 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>シューティングゲーム 音あり完全版</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>シューティングゲーム改良版</title>
   <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      background-color: #000;
-      color: white;
-      font-family: sans-serif;
-      text-align: center;
+    html, body {
+      margin:0; padding:0; overflow:hidden; background:#111;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #eee; user-select:none;
     }
-    #startScreen {
-      position: absolute;
-      top: 50%;
-      left: 50%;
+    canvas {
+      display:block;
+      background: linear-gradient(to bottom, #0b0b0b, #1a1a1a);
+    }
+    #startMessage, #gameClearMessage {
+      position: absolute; top:50%; left:50%;
       transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.85); padding: 30px 40px;
+      border-radius: 12px; box-shadow: 0 0 15px #0ff;
+      text-align: center; z-index: 20;
     }
-    #gameCanvas {
-      display: none;
-      background-color: black;
+    #startMessage h2 { margin-top:0; font-size: 28px; color: #0ff; }
+    #startMessage ul {
+      text-align: left; margin: 10px 0 20px 20px;
+      color: #ccc; font-size: 16px;
     }
-    #backButton, #scoreDisplay, #timerDisplay, #lifeDisplay {
-      position: absolute;
-      padding: 10px 20px;
-      background-color: #fff;
-      color: #000;
-      border: none;
-      border-radius: 5px;
-      font-size: 16px;
-      z-index: 10;
-      user-select: none;
+    #startMessage button {
+      font-size: 18px; background: #0ff; border: none;
+      padding: 12px 24px; border-radius: 8px;
+      cursor: pointer; color: #111; font-weight: bold;
+      transition: background 0.3s ease;
     }
-    #backButton { top: 20px; left: 20px; cursor: pointer; }
-    #scoreDisplay { top: 20px; right: 250px; }
-    #lifeDisplay { top: 20px; right: 150px; }
-    #timerDisplay { top: 20px; right: 20px; }
-    #gameMessage {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      color: white;
-      font-size: 36px;
-      background: rgba(0,0,0,0.7);
-      padding: 20px 40px;
-      border-radius: 10px;
-      display: none;
-      z-index: 10;
-      user-select: none;
+    #startMessage button:hover { background: #0aa; }
+    #backButton, #scoreDisplay, #timerDisplay, #lifeDisplay, #powerupDisplay {
+      position: absolute; background: rgba(0,0,0,0.6);
+      color: #0ff; font-weight: bold; padding: 8px 15px;
+      border-radius: 8px; user-select:none;
+      font-size: 16px; z-index: 15;
     }
-    .mobile-controls {
-      position: absolute;
-      bottom: 30px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      gap: 10px;
-      z-index: 11;
+    #backButton {
+      top: 20px; left: 20px; cursor: pointer;
+      background: #222; color: #0ff; border: 2px solid #0ff;
     }
-    .mobile-btn {
-      width: 60px;
-      height: 60px;
-      background: rgba(255,255,255,0.7);
-      border-radius: 50%;
-      text-align: center;
-      line-height: 60px;
-      font-size: 24px;
-      user-select: none;
-      cursor: pointer;
+    #scoreDisplay { top: 20px; right: 260px; }
+    #timerDisplay { top: 20px; right: 180px; }
+    #lifeDisplay { top: 20px; right: 100px; }
+    #powerupDisplay {
+      top: 60px; right: 20px; width: 140px;
     }
   </style>
 </head>
 <body>
-
-<div id="startScreen">
-  <h1>シューティングゲーム</h1>
-  <button id="startBtn" style="font-size:24px; padding:10px 30px; cursor:pointer;">ゲーム開始</button>
+<div id="startMessage">
+  <h2>ゲームの遊び方</h2>
+  <p>制限時間<span style="color:#0ff;">90秒</span>以内にスコア900点を目指せ！</p>
+  <p>敵の種類：</p>
+  <ul>
+    <li><span style="color:red;">赤敵</span>：1発で倒せる（10点）</li>
+    <li><span style="color:blue;">青敵</span>：4発で倒せる（30点）</li>
+    <li><span style="color:gold;">金敵</span>：10発で倒せる（80点）即死</li>
+    <li><span style="color:magenta;">虹敵</span>：20発で倒せる（600点）即死</li>
+    <li><span style="color:orange;">ボス</span>：30発で倒せる（300点）全パワーアップ（10秒間）</li>
+  </ul>
+  <p>赤敵: 10% / 青敵: 50% / 金・虹: 100% でパワーアップをドロップ！</p>
+  <p>ボスは600点以上で登場！</p>
+  <button onclick="startGame()">ゲームスタート</button>
 </div>
 
-<button id="backButton" onclick="location.href='index.html'" style="display:none;">戻る</button>
-<div id="scoreDisplay" style="display:none;">スコア: 0</div>
-<div id="lifeDisplay" style="display:none;">ライフ: 5</div>
-<div id="timerDisplay" style="display:none;">時間: 60</div>
-<div id="gameMessage"></div>
+<button id="backButton" onclick="location.href='index.html'">戻る</button>
+<div id="scoreDisplay">スコア: 0</div>
+<div id="timerDisplay">時間: 90</div>
+<div id="lifeDisplay">ライフ: 5</div>
+<div id="powerupDisplay">パワーアップ: なし</div>
+<div id="gameClearMessage" style="display:none;"></div>
 <canvas id="gameCanvas"></canvas>
-<div class="mobile-controls" style="display:none;">
-  <div class="mobile-btn" id="leftBtn">◀</div>
-  <div class="mobile-btn" id="shootBtn">●</div>
-  <div class="mobile-btn" id="rightBtn">▶</div>
-</div>
-
-<!-- ここは必ずリポジトリ内 audio フォルダにファイルを置くこと -->
-<audio id="bgm" src="audio/arcade-loop.mp3" loop preload="auto"></audio>
-<audio id="shootSound" src="audio/laser-shoot.mp3" preload="auto"></audio>
-<audio id="explodeSound" src="audio/explosion.mp3" preload="auto"></audio>
 
 <script>
-  const startBtn = document.getElementById("startBtn");
-  const startScreen = document.getElementById("startScreen");
-  const backButton = document.getElementById("backButton");
-  const scoreDisplay = document.getElementById("scoreDisplay");
-  const lifeDisplay = document.getElementById("lifeDisplay");
-  const timerDisplay = document.getElementById("timerDisplay");
-  const gameMessage = document.getElementById("gameMessage");
-  const gameCanvas = document.getElementById("gameCanvas");
-  const mobileControls = document.querySelector(".mobile-controls");
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 
-  const bgm = document.getElementById("bgm");
-  const shootSound = document.getElementById("shootSound");
-  const explodeSound = document.getElementById("explodeSound");
+let gameStarted = false, gameOver = false;
+let score = 0, life = 5, timeLeft = 90;
+let bossSpawned = false;
+let player = {
+  x: canvas.width/2, y: canvas.height - 80,
+  width: 40, height: 40,
+  baseSpeed: 6, speed: 6,
+  color: "lime", shield: false,
+  shotInterval: 500, lastShotTime: 0
+};
+let bullets = [], enemies = [], powerUps = [];
+let keys = {}, velocityX = 0;
+let enemySpawnRate = 1000;
+let enemySpawnTimer;
 
-  const ctx = gameCanvas.getContext("2d");
+document.addEventListener("keydown", e => keys[e.key] = true);
+document.addEventListener("keyup", e => keys[e.key] = false);
 
-  let player, bullets, enemies, explosions;
-  let score, gameOver, timeLeft;
-  const clearScore = 900;
+function startGame(){
+  score = 0; life = 5; timeLeft = 90;
+  gameStarted = true; gameOver = false; bossSpawned = false;
+  player.x = canvas.width/2; player.y = canvas.height - 80;
+  player.shield = false; player.shotInterval = 500;
+  bullets = []; enemies = []; powerUps = [];
+  document.getElementById("startMessage").style.display = "none";
+  document.getElementById("gameClearMessage").style.display = "none";
+  spawnEnemies();
+  timerLoop();
+  requestAnimationFrame(gameLoop);
+}
 
-  function initGame() {
-    gameCanvas.width = window.innerWidth;
-    gameCanvas.height = window.innerHeight;
+function updateUI(){
+  document.getElementById("scoreDisplay").textContent = `スコア: ${score}`;
+  document.getElementById("timerDisplay").textContent = `時間: ${timeLeft}`;
+  document.getElementById("lifeDisplay").textContent = `ライフ: ${life}`;
+  let text = "パワーアップ: ";
+  if(player.shield) text += "シールド ";
+  if(player.speed > player.baseSpeed) text += "スピード ";
+  if(player.shotInterval < 500) text += "連射 ";
+  if(text === "パワーアップ: ") text += "なし";
+  document.getElementById("powerupDisplay").textContent = text;
+}
 
-    player = {
-      x: gameCanvas.width / 2,
-      y: gameCanvas.height - 60,
-      width: 40,
-      height: 40,
-      color: "lime",
-      speed: 10,
-      life: 5
-    };
+function drawRect(obj){
+  ctx.fillStyle = obj.color;
+  ctx.fillRect(obj.x, obj.y, obj.width, obj.height);
+}
 
-    bullets = [];
-    enemies = [];
-    explosions = [];
-
-    score = 0;
-    gameOver = false;
-    timeLeft = 60;
-
-    updateDisplays();
+function drawPlayer(){
+  drawRect(player);
+  if(player.shield){
+    ctx.strokeStyle = "cyan"; ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(player.x + player.width/2, player.y + player.height/2, player.width, 0, Math.PI*2);
+    ctx.stroke();
   }
+}
 
-  function updateDisplays() {
-    scoreDisplay.textContent = `スコア: ${score}`;
-    timerDisplay.textContent = `時間: ${timeLeft}`;
-    lifeDisplay.textContent = `ライフ: ${player.life}`;
+function shootBullet(){
+  const now = Date.now();
+  if(now - player.lastShotTime < player.shotInterval) return;
+  bullets.push({ x: player.x + player.width/2 - 2.5, y: player.y, width: 5, height: 20 });
+  player.lastShotTime = now;
+}
+
+document.addEventListener("keydown", e => {
+  if(e.key === " " || e.key === "z") shootBullet();
+});
+
+function handlePlayerMovement(){
+  const accel = 1.5, max = player.speed;
+  if(keys["ArrowLeft"]) velocityX = Math.max(velocityX - accel, -max);
+  else if(keys["ArrowRight"]) velocityX = Math.min(velocityX + accel, max);
+  else velocityX *= 0.8;
+
+  player.x += velocityX;
+  player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
+}
+
+function drawBullets(){
+  ctx.fillStyle = "yellow";
+  for(let i = bullets.length-1; i >= 0; i--){
+    bullets[i].y -= 15;
+    ctx.fillRect(bullets[i].x, bullets[i].y, bullets[i].width, bullets[i].height);
+    if(bullets[i].y < 0) bullets.splice(i, 1);
   }
+}
 
-  function drawPlayer() {
-    ctx.fillStyle = player.color;
-    ctx.fillRect(player.x, player.y, player.width, player.height);
-  }
+function spawnEnemies(){
+  enemySpawnTimer = setInterval(() => {
+    if(gameOver) return;
+    let e = {}, rand = Math.random();
+    if(rand < 0.6)
+      e = {color:"red", hp:1, score:10, damage:1, speed:3};
+    else if(rand < 0.9)
+      e = {color:"blue", hp:4, score:30, damage:2, speed:2};
+    else if(rand < 0.98)
+      e = {color:"gold", hp:10, score:80, damage:999, speed:1};
+    else
+      e = {color:"magenta", hp:20, score:600, damage:999, speed:1};
+    e.x = Math.random() * (canvas.width - 40);
+    e.y = -40; e.width = 40; e.height = 40; e.hitCount = 0;
+    enemies.push(e);
+  }, enemySpawnRate);
+}
 
-  function drawBullets() {
-    ctx.fillStyle = "yellow";
-    for (let i = bullets.length - 1; i >= 0; i--) {
-      bullets[i].y -= 10;
-      ctx.fillRect(bullets[i].x, bullets[i].y, 5, 20);
-      if (bullets[i].y < 0) bullets.splice(i, 1);
-    }
-  }
+function spawnBoss(){
+  enemies.push({
+    x: canvas.width/2 - 50, y: -80, width: 100, height: 100,
+    color: "orange", hp: 30, hitCount: 0, speed: 1, damage: 999, score: 300, isBoss: true
+  });
+}
 
-  const enemyTypes = [
-    { color: "red", score: 10, hp: 1, damage: 1, chance: 0.6 },
-    { color: "blue", score: 30, hp: 4, damage: 2, chance: 0.3 },
-    { color: "gold", score: 80, hp: 10, damage: 99, chance: 0.1 }
-  ];
+function drawEnemies(){
+  for(let i=enemies.length-1; i>=0; i--){
+    let e = enemies[i];
+    e.y += e.speed;
+    ctx.fillStyle = e.color;
+    ctx.fillRect(e.x, e.y, e.width, e.height);
 
-  function drawEnemies() {
-    for (let i = enemies.length - 1; i >= 0; i--) {
-      const enemy = enemies[i];
-      enemy.y += 2;
-      ctx.fillStyle = enemy.color;
-      ctx.fillRect(enemy.x, enemy.y, 40, 40);
-
-      // 弾との当たり判定
-      for (let j = bullets.length - 1; j >= 0; j--) {
-        const bullet = bullets[j];
-        if (
-          bullet.x < enemy.x + 40 && bullet.x + 5 > enemy.x &&
-          bullet.y < enemy.y + 40 && bullet.y + 20 > enemy.y
-        ) {
-          bullets.splice(j, 1);
-          enemy.hp--;
-          if (enemy.hp <= 0) {
-            score += enemy.score;
-            explodeSound.currentTime = 0;
-            explodeSound.play();
-            explosions.push({ x: enemy.x, y: enemy.y, radius: 0 });
-            enemies.splice(i, 1);
-            break;
-          }
+    for(let j=bullets.length-1; j>=0; j--){
+      let b = bullets[j];
+      if(b.x < e.x + e.width && b.x + b.width > e.x &&
+         b.y < e.y + e.height && b.y + b.height > e.y){
+        e.hitCount++;
+        bullets.splice(j,1);
+        if(e.hitCount >= e.hp){
+          enemyDefeated(e, i);
+          break;
         }
       }
+    }
 
-      // プレイヤーとの当たり判定
-      if (
-        enemy.y + 40 > player.y &&
-        enemy.x < player.x + player.width &&
-        enemy.x + 40 > player.x
-      ) {
-        player.life -= enemy.damage;
-        enemies.splice(i, 1);
-        if (player.life <= 0) {
-          endGame(false);
-          return;
-        }
-      }
+    if(!player.shield &&
+      e.x < player.x + player.width && e.x + e.width > player.x &&
+      e.y < player.y + player.height && e.y + e.height > player.y){
+      enemies.splice(i,1);
+      if(e.damage >= 999){ life = 0; endGame(false); return; }
+      else { life -= e.damage; if(life <= 0){ endGame(false); return; } }
+    }
 
-      // プレイヤーよりY座標が大きくなったら消す
-      if (enemy.y > player.y + player.height) {
-        enemies.splice(i, 1);
-      }
+    if(e.y > canvas.height) enemies.splice(i,1);
+  }
+}
+
+function enemyDefeated(e, index){
+  score += e.score;
+  enemies.splice(index,1);
+  if(e.isBoss){
+    applyPowerUp("speed");
+    applyPowerUp("rapid");
+    applyPowerUp("life");
+    applyPowerUp("shield");
+    clearInterval(enemySpawnTimer);
+    enemySpawnRate /= 2;
+    spawnEnemies();
+    setTimeout(() => {
+      clearInterval(enemySpawnTimer);
+      enemySpawnRate *= 2;
+      spawnEnemies();
+    }, 10000);
+  } else {
+    let chance = 0;
+    if(e.color === "red") chance = 0.1;
+    if(e.color === "blue") chance = 0.5;
+    if(e.color === "gold" || e.color === "magenta") chance = 1.0;
+    if(Math.random() < chance){
+      let types = ["speed","rapid","life","shield"];
+      let t = types[Math.floor(Math.random()*types.length)];
+      let color = {speed:"#0ff", rapid:"#ffa500", life:"#ff69b4", shield:"#90ee90"}[t];
+      powerUps.push({x:e.x,y:e.y,width:30,height:30,color,speed:3,type:t});
     }
   }
+}
 
-  function drawExplosions() {
-    for (let i = explosions.length - 1; i >= 0; i--) {
-      const exp = explosions[i];
-      ctx.beginPath();
-      ctx.arc(exp.x + 20, exp.y + 20, exp.radius, 0, Math.PI * 2);
-      ctx.fillStyle = "orange";
-      ctx.fill();
-      exp.radius += 3;
-      if (exp.radius > 30) explosions.splice(i, 1);
+function drawPowerUps(){
+  for(let i=powerUps.length-1; i>=0; i--){
+    let p = powerUps[i]; p.y += p.speed;
+    ctx.fillStyle = p.color;
+    ctx.fillRect(p.x, p.y, p.width, p.height);
+    if(p.y > canvas.height) powerUps.splice(i,1);
+    if(p.x < player.x + player.width && p.x + p.width > player.x &&
+       p.y < player.y + player.height && p.y + p.height > player.y){
+      applyPowerUp(p.type);
+      powerUps.splice(i,1);
     }
   }
+}
 
-  function spawnEnemy() {
-    if (gameOver) return;
-    const rand = Math.random();
-    let total = 0;
-    for (const type of enemyTypes) {
-      total += type.chance;
-      if (rand <= total) {
-        enemies.push({
-          x: Math.random() * (gameCanvas.width - 40),
-          y: -40,
-          color: type.color,
-          score: type.score,
-          hp: type.hp,
-          damage: type.damage
-        });
-        break;
-      }
-    }
+function applyPowerUp(type){
+  if(type === "speed"){
+    player.speed = player.baseSpeed + 4;
+    setTimeout(()=>{player.speed = player.baseSpeed;},5000);
   }
-
-  function endGame(clear) {
-    gameOver = true;
-    const msg = clear ? `🎉ゲームクリア！スコア: ${score}` : `❌ゲームオーバー... スコア: ${score}`;
-    gameMessage.textContent = msg;
-    gameMessage.style.display = "block";
-    bgm.pause();
-    bgm.currentTime = 0;
+  if(type === "rapid"){
+    player.shotInterval = 150;
+    setTimeout(()=>{player.shotInterval = 500;},5000);
   }
+  if(type === "life" && life < 5) life++;
+  if(type === "shield"){
+    player.shield = true;
+    setTimeout(()=>{player.shield = false;},5000);
+  }
+}
 
-  function checkTime() {
+function checkBoss(){
+  if(!bossSpawned && score >= 600){
+    bossSpawned = true;
+    spawnBoss();
+  }
+}
+
+function timerLoop(){
+  setInterval(()=>{
+    if(gameOver) return;
     timeLeft--;
-    if (timeLeft <= 0) {
-      endGame(score >= clearScore);
-    }
-  }
+    if(timeLeft <= 0) endGame(score >= 900);
+  },1000);
+}
 
-  function gameLoop() {
-    if (gameOver) return;
-    ctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
-    drawPlayer();
-    drawBullets();
-    drawEnemies();
-    drawExplosions();
-    updateDisplays();
-    requestAnimationFrame(gameLoop);
-  }
+function endGame(clear){
+  gameOver = true;
+  clearInterval(enemySpawnTimer);
+  const msg = document.getElementById("gameClearMessage");
+  msg.style.display = "block";
+  msg.style.color = clear ? "#0f0" : "#f00";
+  msg.textContent = clear ? `ゲームクリア！スコア: ${score}` : `ゲームオーバー！スコア: ${score}`;
+}
 
-  function shootBullet() {
-    bullets.push({ x: player.x + player.width / 2 - 2.5, y: player.y });
-    shootSound.currentTime = 0;
-    shootSound.play();
-  }
-
-  document.addEventListener("keydown", e => {
-    if (e.key === "ArrowLeft" && player.x > 0) player.x -= player.speed;
-    if (e.key === "ArrowRight" && player.x < gameCanvas.width - player.width) player.x += player.speed;
-    if (e.key === " ") shootBullet();
-  });
-
-  document.getElementById("leftBtn").addEventListener("touchstart", () => player.x -= player.speed);
-  document.getElementById("rightBtn").addEventListener("touchstart", () => player.x += player.speed);
-  document.getElementById("shootBtn").addEventListener("touchstart", shootBullet);
-
-  startBtn.addEventListener("click", () => {
-    startScreen.style.display = "none";
-    gameCanvas.style.display = "block";
-    backButton.style.display = "block";
-    scoreDisplay.style.display = "block";
-    lifeDisplay.style.display = "block";
-    timerDisplay.style.display = "block";
-    mobileControls.style.display = "flex";
-
-    initGame();
-    bgm.play().catch(() => {/* 自動再生制限でエラーなら無視 */});
-    setInterval(spawnEnemy, 1000);
-    setInterval(() => { if (!gameOver) checkTime(); }, 1000);
-    gameLoop();
-  });
+function gameLoop(){
+  if(!gameStarted || gameOver) return;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  handlePlayerMovement();
+  drawPlayer();
+  drawBullets();
+  drawEnemies();
+  drawPowerUps();
+  updateUI();
+  checkBoss();
+  requestAnimationFrame(gameLoop);
+}
 </script>
-
 </body>
 </html>
+
